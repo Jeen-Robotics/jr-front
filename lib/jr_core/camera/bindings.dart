@@ -19,45 +19,31 @@ class Camera {
           lookup)
       : _lookup = lookup;
 
-  void initializeCamera() {
-    return _initializeCamera();
-  }
-
-  late final _initializeCameraPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function()>>('initializeCamera');
-  late final _initializeCamera =
-      _initializeCameraPtr.asFunction<void Function()>();
-
-  bool isCameraInitialized() {
-    return _isCameraInitialized();
-  }
-
-  late final _isCameraInitializedPtr =
-      _lookup<ffi.NativeFunction<ffi.Bool Function()>>('isCameraInitialized');
-  late final _isCameraInitialized =
-      _isCameraInitializedPtr.asFunction<bool Function()>();
-
-  void stopCamera() {
-    return _stopCamera();
-  }
-
-  late final _stopCameraPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function()>>('stopCamera');
-  late final _stopCamera = _stopCameraPtr.asFunction<void Function()>();
-
-  ffi.Pointer<ffi.Uint8> processFrame(
+  ffi.Pointer<ffi.Uint8> yuv2rgba(
+    ffi.Pointer<ffi.Uint8> y,
+    ffi.Pointer<ffi.Uint8> u,
+    ffi.Pointer<ffi.Uint8> v,
     int width,
     int height,
   ) {
-    return _processFrame(
+    return _yuv2rgba(
+      y,
+      u,
+      v,
       width,
       height,
     );
   }
 
-  late final _processFramePtr = _lookup<
+  late final _yuv2rgbaPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Pointer<ffi.Uint8> Function(ffi.Int, ffi.Int)>>('processFrame');
-  late final _processFrame =
-      _processFramePtr.asFunction<ffi.Pointer<ffi.Uint8> Function(int, int)>();
+          ffi.Pointer<ffi.Uint8> Function(
+              ffi.Pointer<ffi.Uint8>,
+              ffi.Pointer<ffi.Uint8>,
+              ffi.Pointer<ffi.Uint8>,
+              ffi.Int,
+              ffi.Int)>>('yuv2rgba');
+  late final _yuv2rgba = _yuv2rgbaPtr.asFunction<
+      ffi.Pointer<ffi.Uint8> Function(ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>, int, int)>();
 }

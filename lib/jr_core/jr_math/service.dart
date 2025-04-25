@@ -10,9 +10,15 @@ final class JRMathService {
   late final DynamicLibrary _lib;
   late final JRMath _bindings;
 
-  JRMathService() {
-    _lib = dlopen('jr_math');
-    _bindings = JRMath(_lib);
+  JRMathService._(this._lib, this._bindings);
+
+  static JRMathService? init() {
+    final lib = dlopen('jr_math');
+    if (lib == null) {
+      return null;
+    }
+    final bindings = JRMath(lib);
+    return JRMathService._(lib, bindings);
   }
 
   double add(double a, double b) => _bindings.add(a, b);

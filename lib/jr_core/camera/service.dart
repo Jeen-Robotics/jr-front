@@ -2,28 +2,66 @@ import 'dart:ffi';
 import 'dart:typed_data';
 import 'bindings.dart';
 import 'package:jr_front/utils/dlopen.dart';
+import 'package:ffi/ffi.dart';
 
 final class CameraService {
-  late final DynamicLibrary _lib;
-  late final Camera _bindings;
+  final DynamicLibrary _lib;
+  final Camera _bindings;
 
-  CameraService() {
-    _lib = dlopen('camera');
-    _bindings = Camera(_lib);
+  Pointer<Uint8> _framePtr = nullptr;
+
+  CameraService._(this._lib, this._bindings);
+
+  static CameraService? init() {
+    final lib = dlopen('camera');
+    if (lib == null) {
+      return null;
+    }
+    final bindings = Camera(lib);
+    return CameraService._(lib, bindings);
   }
 
-  void initializeCamera() => _bindings.initializeCamera();
+  void dispose() {
+    if (_framePtr != nullptr) {
+      malloc.free(_framePtr);
+    }
 
-  bool isCameraInitialized() => _bindings.isCameraInitialized();
+    _lib.close();
+  }
 
-  void stopCamera() => _bindings.stopCamera();
+  Uint8List? yuv2rgba(
+    Uint8List y,
+    Uint8List u,
+    Uint8List v, 
+    int width,
+    int height,
+  ) {
+    // Allocate Pointers for the YUV data
+    final yPtr = malloc<Uint8>(y.length);
+    final uPtr = malloc<Uint8>(u.length);
+    final vPtr = malloc<Uint8>(v.length);
 
-  Uint8List? processFrame(int width, int height) {
-    final framePtr = _bindings.processFrame(width, height);
-    if (framePtr == nullptr) {
+    // Copy data directly using address
+    yPtr.asTypedList(y.length).setAll(0, y);
+    uPtr.asTypedList(u.length).setAll(0, u);
+    vPtr.asTypedList(v.length).setAll(0, v);
+
+    // Process the frame
+    if (_framePtr != nullptr) {
+      malloc.free(_framePtr);
+    }
+    _framePtr = _bindings.yuv2rgba(yPtr, uPtr, vPtr, width, height);
+
+    // Free the YUV pointers
+    malloc.free(yPtr);
+    malloc.free(uPtr);
+    malloc.free(vPtr);
+
+    if (_framePtr == nullptr) {
       return null;
     }
 
-    return framePtr.asTypedList(width * height * 4);
+    // Get the RGBA data and free the frame pointer
+    return _framePtr.asTypedList(width * height * 4);
   }
 }
