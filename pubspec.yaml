@@ -1,0 +1,24 @@
+name: jr_front
+description: "Jeen Robotics Front"
+publish_to: 'none'
+
+version: 0.0.1+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ffi: ^2.0.1
+  camera: ^0.10.5+9
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  ffigen: ^18.1.0
+
+flutter:
+  uses-material-design: true

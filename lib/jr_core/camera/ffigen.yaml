@@ -1,0 +1,10 @@
+name: Camera
+description: "Jeen Robotics Camera library"
+
+output: bindings.dart
+
+headers:
+  entry-points:
+    - ../../../../jr-core/core/camera/include/camera/camera_interface.h
+  include-directives:
+    - '**camera_interface.h'

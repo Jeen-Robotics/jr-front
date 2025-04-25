@@ -1,0 +1,8 @@
+name: JRMath
+description: "Jeen Robotics Math"
+
+output: bindings.dart
+
+headers:
+  entry-points:
+    - ../../../../jr-core/core/jr_math/include/jr_math/jr_math.h
