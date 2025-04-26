@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 
-import 'jr_core/camera/service.dart' as jr;
+import 'jr_core/imgproc/service.dart' as jr;
 
 import 'camera/camera_service.dart';
 import 'gps/gps_service.dart';
@@ -45,7 +45,7 @@ class _CameraPageState extends State<CameraPage> {
   final _gpsService = GPSService(const LocationSettings(
     accuracy: LocationAccuracy.bestForNavigation,
   ));
-  late final jr.CameraService? _jrCameraService;
+  late final jr.ImgProcService? _jrImgProcService;
   bool _isCameraInitialized = false;
   bool _isGpsInitialized = false;
   Position? _currentLocation;
@@ -109,7 +109,7 @@ class _CameraPageState extends State<CameraPage> {
       });
 
       if (_isCameraInitialized) {
-        _jrCameraService = jr.CameraService.init();
+        _jrImgProcService = jr.ImgProcService.init();
         _startCameraStream();
       }
     } catch (e) {
@@ -123,7 +123,7 @@ class _CameraPageState extends State<CameraPage> {
     _imageStreamSubscription = imageStream.listen((CameraImage image) async {
       // final rgba = rgbaFromCameraImage(image);
 
-      final rgba = _jrCameraService?.yuv2rgba(
+      final rgba = _jrImgProcService?.yuv2rgba(
         image.planes[0].bytes,
         image.planes[1].bytes,
         image.planes[2].bytes,

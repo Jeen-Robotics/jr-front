@@ -4,21 +4,21 @@ import 'bindings.dart';
 import 'package:jr_front/utils/dlopen.dart';
 import 'package:ffi/ffi.dart';
 
-final class CameraService {
+final class ImgProcService {
   final DynamicLibrary _lib;
-  final Camera _bindings;
+  final ImgProc _bindings;
 
   Pointer<Uint8> _framePtr = nullptr;
 
-  CameraService._(this._lib, this._bindings);
+  ImgProcService._(this._lib, this._bindings);
 
-  static CameraService? init() {
-    final lib = dlopen('camera');
+  static ImgProcService? init() {
+    final lib = dlopen('imgproc');
     if (lib == null) {
       return null;
     }
-    final bindings = Camera(lib);
-    return CameraService._(lib, bindings);
+    final bindings = ImgProc(lib);
+    return ImgProcService._(lib, bindings);
   }
 
   void dispose() {

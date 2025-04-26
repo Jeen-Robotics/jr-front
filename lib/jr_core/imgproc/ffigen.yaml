@@ -1,0 +1,10 @@
+name: ImgProc
+description: "Jeen Robotics ImgProc library"
+
+output: bindings.dart
+
+headers:
+  entry-points:
+    - ../../../../jr-core/core/imgproc/include/imgproc/imgproc.h
+  include-directives:
+    - '**imgproc.h'
