@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 
-import 'jr_core/imgproc/service.dart' as jr;
+// import 'jr_core/imgproc/service.dart' as jr;
+import 'jr_core/camera/service.dart' as jr;
 
 import 'camera/camera_service.dart';
 import 'gps/gps_service.dart';
@@ -45,7 +46,8 @@ class _CameraPageState extends State<CameraPage> {
   final _gpsService = GPSService(const LocationSettings(
     accuracy: LocationAccuracy.bestForNavigation,
   ));
-  late final jr.ImgProcService? _jrImgProcService;
+  // late final jr.ImgProcService? _jrImgProcService;
+  late final jr.CameraService? _jrCameraService;
   bool _isCameraInitialized = false;
   bool _isGpsInitialized = false;
   Position? _currentLocation;
@@ -109,7 +111,8 @@ class _CameraPageState extends State<CameraPage> {
       });
 
       if (_isCameraInitialized) {
-        _jrImgProcService = jr.ImgProcService.init();
+        // _jrImgProcService = jr.ImgProcService.init();
+        _jrCameraService = jr.CameraService.init();
         _startCameraStream();
       }
     } catch (e) {
@@ -118,30 +121,55 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   void _startCameraStream() {
-    final imageStream = _cameraService.startImageStream();
+    const int imageWidth = 1280;
+    const int imageHeight = 720;
 
-    _imageStreamSubscription = imageStream.listen((CameraImage image) async {
-      // final rgba = rgbaFromCameraImage(image);
+    if (_jrCameraService != null) {
+      final didInit = _jrCameraService.initialize(imageWidth, imageHeight, 0x23);
+      if (didInit) {
+        final didStart = _jrCameraService.startStreaming((data) async {
+          if (data.isEmpty) {
+            return;
+          }
 
-      final rgba = _jrImgProcService?.yuv2rgba(
-        image.planes[0].bytes,
-        image.planes[1].bytes,
-        image.planes[2].bytes,
-        image.width,
-        image.height,
-      );
-      if (rgba == null) {
-        return;
-      }
-
-      final uiImage = await imageFromBytes(rgba, image.width, image.height);
-      setState(() {
-        if (_uiImage != null) {
-          _uiImage!.dispose();
+          final uiImage = await imageFromBytes(data, imageWidth, imageHeight);
+          setState(() {
+            if (_uiImage != null) {
+              _uiImage!.dispose();
+            }
+            _uiImage = uiImage;
+          });
+        });
+        if (!didStart) {
+          print("Hmmm");
         }
-        _uiImage = uiImage;
-      });
-    });
+      }
+    }
+
+    // final imageStream = _cameraService.startImageStream();
+
+    // _imageStreamSubscription = imageStream.listen((CameraImage image) async {
+    //   // final rgba = rgbaFromCameraImage(image);
+
+    //   final rgba = _jrImgProcService?.yuv2rgba(
+    //     image.planes[0].bytes,
+    //     image.planes[1].bytes,
+    //     image.planes[2].bytes,
+    //     image.width,
+    //     image.height,
+    //   );
+    //   if (rgba == null) {
+    //     return;
+    //   }
+
+    //   final uiImage = await imageFromBytes(rgba, image.width, image.height);
+    //   setState(() {
+    //     if (_uiImage != null) {
+    //       _uiImage!.dispose();
+    //     }
+    //     _uiImage = uiImage;
+    //   });
+    // });
   }
 
   int _getQuarterTurns(DeviceOrientation orientation) {
