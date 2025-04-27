@@ -1,15 +1,10 @@
-import 'dart:async';
 import 'dart:ui' as ui;
 
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 
-// import 'jr_core/imgproc/service.dart' as jr;
-import 'jr_core/camera/service.dart' as jr;
+import 'jr_core/api/service.dart' as jr;
 
-import 'camera/camera_service.dart';
 import 'gps/gps_service.dart';
 import 'utils/image.dart';
 import 'widget/image_painter.dart';
@@ -42,18 +37,20 @@ class CameraPage extends StatefulWidget {
 }
 
 class _CameraPageState extends State<CameraPage> {
-  final CameraService _cameraService = CameraService();
+  late final jr.JRApiService? _jrApiService;
+
+  bool _isCameraInitialized = false;
+  int _currentCameraIndex = 0;
+  ui.Image? _uiImage;
+
   final _gpsService = GPSService(const LocationSettings(
     accuracy: LocationAccuracy.bestForNavigation,
   ));
-  // late final jr.ImgProcService? _jrImgProcService;
-  late final jr.CameraService? _jrCameraService;
-  bool _isCameraInitialized = false;
   bool _isGpsInitialized = false;
   Position? _currentLocation;
-  StreamSubscription<CameraImage>? _imageStreamSubscription;
-  int _currentCameraIndex = 0;
-  ui.Image? _uiImage;
+
+  static const int imageWidth = 1280;
+  static const int imageHeight = 720;
 
   @override
   void initState() {
@@ -62,6 +59,7 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   Future<void> _initializeServices() async {
+    _jrApiService = jr.JRApiService.init();
     await _initializeCamera();
     await _initializeGPS();
   }
@@ -91,10 +89,12 @@ class _CameraPageState extends State<CameraPage> {
         timeLimit: Duration(seconds: 5),
       ),
     );
-    print("location: $location");
-    setState(() {
-      _currentLocation = location;
-    });
+    if (location != null) {
+      print("location: $location");
+      setState(() {
+        _currentLocation = location;
+      });
+    }
 
     _gpsService.getLocationStream().listen((location) {
       setState(() {
@@ -104,15 +104,20 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   Future<void> _initializeCamera() async {
-    try {
-      await _cameraService.initialize();
-      setState(() {
-        _isCameraInitialized = _cameraService.isInitialized;
-      });
+    if (_jrApiService == null) return;
 
-      if (_isCameraInitialized) {
-        // _jrImgProcService = jr.ImgProcService.init();
-        _jrCameraService = jr.CameraService.init();
+    try {
+      print("Number of cameras: ${_jrApiService.numCameras}");
+
+      final didOpen = _jrApiService.openCamera(
+        imageWidth,
+        imageHeight,
+        _currentCameraIndex,
+      );
+      if (didOpen) {
+        setState(() {
+          _isCameraInitialized = didOpen;
+        });
         _startCameraStream();
       }
     } catch (e) {
@@ -121,84 +126,46 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   void _startCameraStream() {
-    const int imageWidth = 1280;
-    const int imageHeight = 720;
-
-    if (_jrCameraService != null) {
-      final didInit = _jrCameraService.initialize(imageWidth, imageHeight, 0x23);
-      if (didInit) {
-        final didStart = _jrCameraService.startStreaming((data) async {
-          if (data.isEmpty) {
-            return;
-          }
-
-          final uiImage = await imageFromBytes(data, imageWidth, imageHeight);
-          setState(() {
-            if (_uiImage != null) {
-              _uiImage!.dispose();
-            }
-            _uiImage = uiImage;
-          });
-        });
-        if (!didStart) {
-          print("Hmmm");
-        }
-      }
+    if (_jrApiService == null || !_isCameraInitialized) {
+      return;
     }
 
-    // final imageStream = _cameraService.startImageStream();
+    _jrApiService.startCameraStreaming((image) async {
+      if (image.isEmpty) {
+        return;
+      }
 
-    // _imageStreamSubscription = imageStream.listen((CameraImage image) async {
-    //   // final rgba = rgbaFromCameraImage(image);
+      final uiImage = await imageFromBytes(
+        image.data,
+        image.width,
+        image.height,
+      );
 
-    //   final rgba = _jrImgProcService?.yuv2rgba(
-    //     image.planes[0].bytes,
-    //     image.planes[1].bytes,
-    //     image.planes[2].bytes,
-    //     image.width,
-    //     image.height,
-    //   );
-    //   if (rgba == null) {
-    //     return;
-    //   }
-
-    //   final uiImage = await imageFromBytes(rgba, image.width, image.height);
-    //   setState(() {
-    //     if (_uiImage != null) {
-    //       _uiImage!.dispose();
-    //     }
-    //     _uiImage = uiImage;
-    //   });
-    // });
-  }
-
-  int _getQuarterTurns(DeviceOrientation orientation) {
-    const Map<DeviceOrientation, int> turns = <DeviceOrientation, int>{
-      DeviceOrientation.portraitUp: 3,
-      DeviceOrientation.landscapeRight: 2,
-      DeviceOrientation.portraitDown: 1,
-      DeviceOrientation.landscapeLeft: 0,
-    };
-    return turns[orientation]!;
+      setState(() {
+        if (_uiImage != null) {
+          _uiImage!.dispose();
+        }
+        _uiImage = uiImage;
+      });
+    });
   }
 
   Future<void> _switchCamera() async {
-    if (!_isCameraInitialized || _cameraService.cameras.length <= 1) return;
+    if (_jrApiService == null) return;
 
     setState(() {
       _isCameraInitialized = false;
     });
 
-    _imageStreamSubscription?.cancel();
-    _imageStreamSubscription = null;
+    await _jrApiService.stopCameraStreaming();
+    _jrApiService.closeCamera();
 
-    _currentCameraIndex =
-        (_currentCameraIndex + 1) % _cameraService.cameras.length;
-    await _cameraService
-        .switchCamera(_cameraService.cameras[_currentCameraIndex]);
+    _currentCameraIndex = (_currentCameraIndex + 1) % _jrApiService.numCameras;
+    final didOpen =
+        _jrApiService.openCamera(imageWidth, imageHeight, _currentCameraIndex);
 
     setState(() {
-      _isCameraInitialized = _cameraService.isInitialized;
+      _isCameraInitialized = didOpen;
     });
 
     if (_isCameraInitialized) {
@@ -208,13 +175,18 @@ class _CameraPageState extends State<CameraPage> {
 
   @override
   void dispose() {
-    _imageStreamSubscription?.cancel();
-    _cameraService.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final orientation = MediaQuery.of(context).orientation;
+    final quarterTurns = orientation == Orientation.landscape
+        ? 2
+        : orientation == Orientation.portrait
+            ? 1
+            : 0;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -222,9 +194,7 @@ class _CameraPageState extends State<CameraPage> {
               ? _uiImage != null
                   ? Center(
                       child: RotatedBox(
-                        quarterTurns: _getQuarterTurns(
-                          _cameraService.controller!.value.deviceOrientation,
-                        ),
+                        quarterTurns: quarterTurns,
                         child: CustomPaint(
                           size: Size(
                             MediaQuery.of(context).size.width,
@@ -237,11 +207,9 @@ class _CameraPageState extends State<CameraPage> {
                         ),
                       ),
                     )
-                  : _cameraService.controller != null
-                      ? Center(child: CameraPreview(_cameraService.controller!))
-                      : const Center(
-                          child: Text('Failed to initialize camera'),
-                        )
+                  : const Center(
+                      child: Text('Failed to initialize camera'),
+                    )
               : const Center(child: CircularProgressIndicator()),
           if (_isGpsInitialized && _currentLocation != null)
             Positioned(
@@ -267,7 +235,7 @@ class _CameraPageState extends State<CameraPage> {
         ],
       ),
       floatingActionButton:
-          _isCameraInitialized && _cameraService.cameras.length > 1
+          _isCameraInitialized && _jrApiService!.numCameras > 1
               ? FloatingActionButton(
                   onPressed: _switchCamera,
                   child: const Icon(Icons.cameraswitch),

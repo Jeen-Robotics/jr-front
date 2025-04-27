@@ -1,0 +1,16 @@
+name: JRApi
+description: "Jeen Robotics API"
+
+output: bindings.dart
+
+compiler-opts:
+  - '-I../jr-core/core/imgproc/include/'
+  - '-I../jr-core/api/include/'
+
+headers:
+  entry-points:
+    - ../../../../jr-core/core/imgproc/include/jr_imgproc/image.h
+    - ../../../../jr-core/api/include/jr_api/camera_device_api.h
+  include-directives:
+    - '**image.h'
+    - '**camera_device_api.h'
