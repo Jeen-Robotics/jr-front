@@ -26,6 +26,7 @@
     <!-- Required for Android 10+ -->
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission android:name="android.permission.READ_DEVICE_CONFIG" />
 
     <!-- Camera permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
