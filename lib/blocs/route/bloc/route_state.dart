@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class RouteState extends Equatable {
   // Location-related state
@@ -8,6 +9,12 @@ class RouteState extends Equatable {
   final double currentSpeed;
   final double maxSpeed;
   final double currentHeading;
+
+  // Camera-related state
+  final LatLng? cameraPosition;
+  final double cameraZoom;
+  final double cameraTilt;
+  final double cameraBearing;
 
   // Navigation-related state
   final String nextRoad;
@@ -23,6 +30,11 @@ class RouteState extends Equatable {
     this.currentSpeed = 0.0,
     this.maxSpeed = 0.0,
     this.currentHeading = 0.0,
+    // Camera state
+    this.cameraPosition,
+    this.cameraZoom = 17.0,
+    this.cameraTilt = 45.0,
+    this.cameraBearing = 0.0,
     // Navigation state
     this.nextRoad = "Unknown Road",
     this.distanceToTurn = 0.5,
@@ -38,6 +50,11 @@ class RouteState extends Equatable {
     double? currentSpeed,
     double? maxSpeed,
     double? currentHeading,
+    // Camera state
+    LatLng? cameraPosition,
+    double? cameraZoom,
+    double? cameraTilt,
+    double? cameraBearing,
     // Navigation state
     String? nextRoad,
     double? distanceToTurn,
@@ -51,6 +68,10 @@ class RouteState extends Equatable {
       currentSpeed: currentSpeed ?? this.currentSpeed,
       maxSpeed: maxSpeed ?? this.maxSpeed,
       currentHeading: currentHeading ?? this.currentHeading,
+      cameraPosition: cameraPosition ?? this.cameraPosition,
+      cameraZoom: cameraZoom ?? this.cameraZoom,
+      cameraTilt: cameraTilt ?? this.cameraTilt,
+      cameraBearing: cameraBearing ?? this.cameraBearing,
       nextRoad: nextRoad ?? this.nextRoad,
       distanceToTurn: distanceToTurn ?? this.distanceToTurn,
       distanceRemaining: distanceRemaining ?? this.distanceRemaining,
@@ -66,6 +87,10 @@ class RouteState extends Equatable {
         currentSpeed,
         maxSpeed,
         currentHeading,
+        cameraPosition,
+        cameraZoom,
+        cameraTilt,
+        cameraBearing,
         nextRoad,
         distanceToTurn,
         distanceRemaining,

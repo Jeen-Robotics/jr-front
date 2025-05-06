@@ -9,9 +9,13 @@ abstract class RouteEvent extends Equatable {
 }
 
 // Location-related events
-class RouteInitialize extends RouteEvent {}
+class RouteInitialize extends RouteEvent {
+  const RouteInitialize();
+}
 
-class RouteStartLocationUpdates extends RouteEvent {}
+class RouteStartLocationUpdates extends RouteEvent {
+  const RouteStartLocationUpdates();
+}
 
 class RouteLocationReceived extends RouteEvent {
   final Position position;
@@ -24,4 +28,10 @@ class RouteLocationReceived extends RouteEvent {
 }
 
 // Navigation-related events
-class RouteUpdateTime extends RouteEvent {} 
+class RouteUpdateTime extends RouteEvent {
+  const RouteUpdateTime();
+}
+
+class RouteMapControllerReady extends RouteEvent {
+  const RouteMapControllerReady();
+} 

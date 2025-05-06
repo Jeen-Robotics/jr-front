@@ -1,83 +1,88 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../blocs/route/bloc/route_bloc.dart';
 import '../blocs/route/bloc/route_state.dart';
 
-class MapView extends StatelessWidget {
+class MapView extends StatefulWidget {
   const MapView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final bloc = context.read<RouteBloc>();
+  State<MapView> createState() => _MapViewState();
+}
 
+class _MapViewState extends State<MapView> {
+  GoogleMapController? _mapController;
+  final Set<Polyline> _polylines = {};
+
+  @override
+  Widget build(BuildContext context) {
     return BlocBuilder<RouteBloc, RouteState>(
       builder: (context, routeState) {
+        if (routeState.currentLocation == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final currentPosition = LatLng(
+          routeState.currentLocation!.latitude,
+          routeState.currentLocation!.longitude,
+        );
+
+        // Update markers
+        final markers = {
+          Marker(
+            markerId: const MarkerId('destination'),
+            position: LatLng(
+              routeState.currentLocation!.latitude + 0.003,
+              routeState.currentLocation!.longitude + 0.002,
+            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueRed,
+            ),
+          ),
+        };
+
+        // Update camera position for third-person view
+        if (_mapController != null && routeState.cameraPosition != null) {
+          _mapController!.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: routeState.cameraPosition!,
+                zoom: routeState.cameraZoom,
+                tilt: routeState.cameraTilt,
+                bearing: routeState.cameraBearing,
+              ),
+            ),
+          );
+        }
+
         return Stack(
           children: [
             // Map background
             Positioned.fill(
-              child: routeState.currentLocation != null
-                  ? FlutterMap(
-                      mapController: bloc.mapController,
-                      options: MapOptions(
-                        initialCenter: LatLng(
-                          routeState.currentLocation!.latitude,
-                          routeState.currentLocation!.longitude,
-                        ),
-                        initialZoom: 17,
-                        maxZoom: 19,
-                        minZoom: 3,
-                      ),
-                      children: [
-                        TileLayer(
-                          urlTemplate:
-                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.jeenrobotics.front',
-                        ),
-                        // Blue route line
-                        const PolylineLayer(
-                          polylines: [
-                            /* Removed blue route line */
-                          ],
-                        ),
-                        MarkerLayer(
-                          markers: [
-                            // Current location marker
-                            Marker(
-                              point: LatLng(
-                                routeState.currentLocation!.latitude,
-                                routeState.currentLocation!.longitude,
-                              ),
-                              child: Transform.rotate(
-                                angle:
-                                    -routeState.currentHeading * (3.14159 / 180),
-                                child: const Icon(
-                                  Icons.navigation,
-                                  color: Colors.amber,
-                                  size: 30,
-                                ),
-                              ),
-                            ),
-                            // Destination marker
-                            Marker(
-                              point: LatLng(
-                                routeState.currentLocation!.latitude + 0.003,
-                                routeState.currentLocation!.longitude + 0.002,
-                              ),
-                              child: const Icon(
-                                Icons.location_on,
-                                color: Colors.red,
-                                size: 30,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    )
-                  : const Center(child: CircularProgressIndicator()),
+              child: GoogleMap(
+                onMapCreated: (controller) {
+                  _mapController = controller;
+                  context.read<RouteBloc>().setMapController(controller);
+                },
+                initialCameraPosition: CameraPosition(
+                  target: currentPosition,
+                  zoom: 17,
+                  tilt: 45, // 3D view tilt
+                  bearing: routeState.currentHeading,
+                ),
+                markers: markers,
+                polylines: _polylines,
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
+                compassEnabled: false,
+                rotateGesturesEnabled: true,
+                tiltGesturesEnabled: true,
+                trafficEnabled: true,
+              ),
             ),
 
             // Top navigation bar
@@ -132,8 +137,10 @@ class MapView extends StatelessWidget {
               left: 20,
               right: 20,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.8),
                   borderRadius: BorderRadius.circular(12),

@@ -1,5 +1,13 @@
 # Jeen Robotics Front
 
+## Pre-requisites
+
+Create `.env` file in the project root:
+
+```env
+GOOGLE_MAPS_API_KEY=<API-KEY>
+```
+
 ## Generate bindings
 
 ```bash

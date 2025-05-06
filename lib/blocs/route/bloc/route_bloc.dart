@@ -1,14 +1,13 @@
 import 'dart:async';
-import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_map/flutter_map.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
 import 'route_event.dart';
 import 'route_state.dart';
 
 class RouteBloc extends Bloc<RouteEvent, RouteState> {
-  final MapController mapController = MapController();
+  GoogleMapController? _mapController;
   StreamSubscription<Position>? _positionStreamSubscription;
   Timer? _navigationTimer;
 
@@ -17,6 +16,32 @@ class RouteBloc extends Bloc<RouteEvent, RouteState> {
     on<RouteStartLocationUpdates>(_onStartLocationUpdates);
     on<RouteLocationReceived>(_onLocationReceived);
     on<RouteUpdateTime>(_onUpdateTime);
+    on<RouteMapControllerReady>(_onMapControllerReady);
+  }
+
+  void setMapController(GoogleMapController controller) {
+    _mapController = controller;
+    add(const RouteMapControllerReady());
+  }
+
+  Future<void> _onMapControllerReady(
+    RouteMapControllerReady event,
+    Emitter<RouteState> emit,
+  ) async {
+    if (state.currentLocation != null) {
+      final cameraPosition = _updateCameraPosition(
+        LatLng(
+          state.currentLocation!.latitude,
+          state.currentLocation!.longitude,
+        ),
+        state.currentHeading,
+      );
+
+      // Update state with new camera position
+      emit(state.copyWith(
+        cameraPosition: cameraPosition,
+      ));
+    }
   }
 
   Future<void> _onInitialize(
@@ -50,7 +75,7 @@ class RouteBloc extends Bloc<RouteEvent, RouteState> {
     // Start navigation timer
     _navigationTimer?.cancel();
     _navigationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      add(RouteUpdateTime());
+      add(const RouteUpdateTime());
     });
   }
 
@@ -63,12 +88,11 @@ class RouteBloc extends Bloc<RouteEvent, RouteState> {
     final maxSpeed = state.maxSpeed > currentSpeed ? state.maxSpeed : currentSpeed;
     final currentHeading = position.heading;
 
-    if (!event.isFirstLocation) {
-      mapController.rotate(currentHeading);
-      mapController.move(
+    LatLng? cameraPosition;
+    if (!event.isFirstLocation && _mapController != null) {
+      cameraPosition = _updateCameraPosition(
         LatLng(position.latitude, position.longitude),
-        mapController.camera.zoom,
-        offset: const Offset(0, 100),
+        currentHeading,
       );
     }
 
@@ -77,7 +101,22 @@ class RouteBloc extends Bloc<RouteEvent, RouteState> {
       currentSpeed: currentSpeed,
       maxSpeed: maxSpeed,
       currentHeading: currentHeading,
+      cameraPosition: cameraPosition,
     ));
+  }
+
+  LatLng? _updateCameraPosition(LatLng position, double heading) {
+    if (_mapController == null) return null;
+
+    // Calculate camera position for third-person view
+    const distance = 0.0005; // Distance behind the vehicle
+    
+    // Calculate the position behind the vehicle based on heading
+    final radians = heading * (math.pi / 180);
+    return LatLng(
+      position.latitude + distance * math.cos(radians),
+      position.longitude + distance * math.sin(radians),
+    );
   }
 
   void _onUpdateTime(
@@ -123,6 +162,7 @@ class RouteBloc extends Bloc<RouteEvent, RouteState> {
   Future<void> close() {
     _positionStreamSubscription?.cancel();
     _navigationTimer?.cancel();
+    _mapController?.dispose();
     return super.close();
   }
 } 
