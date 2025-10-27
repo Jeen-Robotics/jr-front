@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:ffi';
+import 'dart:ffi' as ffi;
 
+import 'package:ffi/ffi.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:jr_front/utils/dlopen.dart';
 
 import 'bindings.dart';
@@ -22,8 +25,8 @@ final class JRApiService {
 
   Completer<void> _sessionCompleter = Completer<void>();
 
-  JRApiService._(this._lib, this._bindings)
-      : _device = _bindings.jr_camera_device_create() {
+  JRApiService._(this._lib, this._bindings) : _device = ffi.nullptr {
+    // : _device = _bindings.jr_camera_device_create() {
     void onSessionReadyCallback() {
       print("onSessionReady");
       _sessionCompleter.complete();
@@ -33,10 +36,13 @@ final class JRApiService {
         NativeCallable<jr_camera_device_void_callback_tFunction>.listener(
       onSessionReadyCallback,
     );
-    _bindings.jr_camera_device_set_session_ready_callback(
-      _device,
-      _nativeSessionCallback.nativeFunction,
-    );
+
+    // _bindings.jr_camera_device_set_session_ready_callback(
+    //   _device,
+    //   _nativeSessionCallback.nativeFunction,
+    // );
+
+    _bindings.init();
   }
 
   static JRApiService? init() {
@@ -51,6 +57,7 @@ final class JRApiService {
   void dispose() {
     stopCameraStreaming();
     if (_device != nullptr) {
+      _bindings.shutdown();
       _bindings.jr_camera_device_destroy(_device);
       _device = nullptr;
     }
@@ -82,7 +89,7 @@ final class JRApiService {
 
     _frameCallback = callback;
 
-    // Create a NativeCallable that properly handles isolate safety
+// Create a NativeCallable that properly handles isolate safety
     void onFrameCallback(
       jr_image_t data,
       Pointer<Void> userData,
@@ -111,14 +118,29 @@ final class JRApiService {
       _bindings.jr_camera_device_stop_streaming(_device);
     }
 
-    // Close the NativeCallable when no longer needed
+// Close the NativeCallable when no longer needed
     if (_frameCallback != null) {
       _nativeFrameCallback.close();
       _frameCallback = null;
     }
 
     await _sessionCompleter.future;
-    // NOTE: This is a hack to ensure the session is ready before closing the camera
+// NOTE: This is a hack to ensure the session is ready before closing the camera
     await Future.delayed(const Duration(seconds: 1));
+  }
+
+  void startRecording() async {
+    final saveDir = await getExternalStorageDirectory();
+    if (saveDir == null) {
+      print("Save directory is null");
+      return;
+    }
+
+    final strPtr = saveDir.path.toNativeUtf8();
+    _bindings.start_recording(strPtr.cast<ffi.Char>());
+  }
+
+  void stopRecording() {
+    _bindings.stop_recording();
   }
 }

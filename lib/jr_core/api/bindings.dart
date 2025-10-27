@@ -62,6 +62,66 @@ class JRApi {
   late final _jr_planar_image_destroy = _jr_planar_image_destroyPtr
       .asFunction<void Function(ffi.Pointer<jr_planar_image_t>)>();
 
+  ffi.Pointer<bag_writer_t> bag_writer_create(
+    ffi.Pointer<ffi.Char> path,
+  ) {
+    return _bag_writer_create(
+      path,
+    );
+  }
+
+  late final _bag_writer_createPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<bag_writer_t> Function(
+              ffi.Pointer<ffi.Char>)>>('bag_writer_create');
+  late final _bag_writer_create = _bag_writer_createPtr
+      .asFunction<ffi.Pointer<bag_writer_t> Function(ffi.Pointer<ffi.Char>)>();
+
+  void bag_writer_destroy(
+    ffi.Pointer<bag_writer_t> writer,
+  ) {
+    return _bag_writer_destroy(
+      writer,
+    );
+  }
+
+  late final _bag_writer_destroyPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<bag_writer_t>)>>(
+          'bag_writer_destroy');
+  late final _bag_writer_destroy = _bag_writer_destroyPtr
+      .asFunction<void Function(ffi.Pointer<bag_writer_t>)>();
+
+  void bag_writer_record_topic(
+    ffi.Pointer<bag_writer_t> writer,
+    ffi.Pointer<ffi.Char> topic,
+  ) {
+    return _bag_writer_record_topic(
+      writer,
+      topic,
+    );
+  }
+
+  late final _bag_writer_record_topicPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<bag_writer_t>,
+              ffi.Pointer<ffi.Char>)>>('bag_writer_record_topic');
+  late final _bag_writer_record_topic = _bag_writer_record_topicPtr.asFunction<
+      void Function(ffi.Pointer<bag_writer_t>, ffi.Pointer<ffi.Char>)>();
+
+  void bag_writer_record_all(
+    ffi.Pointer<bag_writer_t> writer,
+  ) {
+    return _bag_writer_record_all(
+      writer,
+    );
+  }
+
+  late final _bag_writer_record_allPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<bag_writer_t>)>>(
+          'bag_writer_record_all');
+  late final _bag_writer_record_all = _bag_writer_record_allPtr
+      .asFunction<void Function(ffi.Pointer<bag_writer_t>)>();
+
   ffi.Pointer<jr_camera_device_t> jr_camera_device_create() {
     return _jr_camera_device_create();
   }
@@ -213,6 +273,44 @@ class JRApi {
       _jr_camera_device_set_session_ready_callbackPtr.asFunction<
           void Function(ffi.Pointer<jr_camera_device_t>,
               jr_camera_device_void_callback_t)>();
+
+  void init() {
+    return _init();
+  }
+
+  late final _initPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function()>>('init');
+  late final _init = _initPtr.asFunction<void Function()>();
+
+  void start_recording(
+    ffi.Pointer<ffi.Char> save_directory,
+  ) {
+    return _start_recording(
+      save_directory,
+    );
+  }
+
+  late final _start_recordingPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Char>)>>(
+          'start_recording');
+  late final _start_recording =
+      _start_recordingPtr.asFunction<void Function(ffi.Pointer<ffi.Char>)>();
+
+  void stop_recording() {
+    return _stop_recording();
+  }
+
+  late final _stop_recordingPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function()>>('stop_recording');
+  late final _stop_recording = _stop_recordingPtr.asFunction<void Function()>();
+
+  void shutdown() {
+    return _shutdown();
+  }
+
+  late final _shutdownPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function()>>('shutdown');
+  late final _shutdown = _shutdownPtr.asFunction<void Function()>();
 }
 
 final class jr_image_t extends ffi.Struct {
@@ -250,6 +348,10 @@ final class jr_planar_image_t extends ffi.Struct {
 
   external ffi.Pointer<jr_plane_t> planes;
 }
+
+final class bag_writer extends ffi.Opaque {}
+
+typedef bag_writer_t = bag_writer;
 
 final class jr_camera_device extends ffi.Opaque {}
 

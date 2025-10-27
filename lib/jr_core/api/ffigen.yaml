@@ -10,7 +10,11 @@ compiler-opts:
 headers:
   entry-points:
     - ../../../../jr-core/core/imgproc/include/jr_imgproc/image.h
+    - ../../../../jr-core/api/include/jr_api/bag_api.h
     - ../../../../jr-core/api/include/jr_api/camera_device_api.h
+    - ../../../../jr-core/api/include/jr_api/runner_api.h
   include-directives:
     - '**image.h'
+    - '**bag_api.h'
     - '**camera_device_api.h'
+    - '**runner_api.h'

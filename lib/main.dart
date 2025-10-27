@@ -62,6 +62,7 @@ class CameraPage extends StatefulWidget {
 
 class _CameraPageState extends State<CameraPage> {
   late final jr.JRApiService? _jrApiService;
+  bool _isRecording = false;
   final MapController _mapController = MapController();
 
   @override
@@ -93,8 +94,8 @@ class _CameraPageState extends State<CameraPage> {
         ),
         BlocProvider<RouteBloc>(
           create: (context) => RouteBloc()
-            ..add(RouteInitialize())
-            ..add(RouteStartLocationUpdates()),
+            ..add(const RouteInitialize())
+            ..add(const RouteStartLocationUpdates()),
         ),
       ],
       child: Scaffold(
@@ -108,6 +109,32 @@ class _CameraPageState extends State<CameraPage> {
             ],
           ),
         ),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: Colors.red,
+            child: Icon(
+              _isRecording ? Icons.stop : Icons.fiber_manual_record,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              if (_jrApiService == null) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text("Service not initialized"),
+                ));
+                return;
+              }
+
+              if (_isRecording) {
+                _jrApiService.stopRecording();
+                setState(() {
+                  _isRecording = false;
+                });
+              } else {
+                _jrApiService.startRecording();
+                setState(() {
+                  _isRecording = true;
+                });
+              }
+            }),
       ),
     );
   }
